@@ -1,0 +1,10 @@
+{
+  "team_1": {
+    "name": "Team Alpha",
+    "created_at": "2026-02-05T20:20:55.935793",
+    "members": [
+      "admin123"
+    ],
+    "total_score": 86
+  }
+}

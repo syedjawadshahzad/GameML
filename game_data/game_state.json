@@ -1,0 +1,16 @@
+{
+  "current_round": 2,
+  "round_active": true,
+  "current_scenario": "fraud_detection",
+  "round_start_time": "2026-02-05T20:22:25.136170",
+  "round_end_time": "2026-02-05T20:22:19.669047",
+  "rounds_completed": [
+    {
+      "round": 1,
+      "scenario": "credit_risk",
+      "ended_at": "2026-02-05T20:22:19.669062"
+    }
+  ],
+  "teams_setup": true,
+  "num_teams": 1
+}

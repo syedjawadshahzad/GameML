@@ -1,0 +1,36 @@
+{
+  "team_1_round_1": {
+    "team_id": "team_1",
+    "round": 1,
+    "scenario": "credit_risk",
+    "method": "linear",
+    "score": 28,
+    "feedback": [
+      "\u274c Method mismatch! You used regression for a classification problem."
+    ],
+    "reflection_answers": {
+      "q1": "It worked but might not be optimal",
+      "q2": "A category (which group)",
+      "q3": ""
+    },
+    "submitted_at": "2026-02-05T20:22:13.954422",
+    "submitted_by": "admin123"
+  },
+  "team_1_round_2": {
+    "team_id": "team_1",
+    "round": 2,
+    "scenario": "fraud_detection",
+    "method": "logistic",
+    "score": 58,
+    "feedback": [
+      "\u2713 Good choice! This method works, but there might be a better option."
+    ],
+    "reflection_answers": {
+      "q1": "It worked but might not be optimal",
+      "q2": "A category (which group)",
+      "q3": ""
+    },
+    "submitted_at": "2026-02-05T20:23:12.089392",
+    "submitted_by": "admin123"
+  }
+}
