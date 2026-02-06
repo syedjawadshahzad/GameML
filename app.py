@@ -92,7 +92,11 @@ def get_game_state():
         "round_end_time": None,
         "rounds_completed": [],
         "teams_setup": False,
-        "num_teams": 0
+        "num_teams": 0,
+        "total_rounds": 5,
+        "rounds_per_team": 5,
+        "team_rounds": {},
+        "min_round_seconds": 180
     }
     return load_json(GAME_STATE_FILE, default_state)
 
@@ -119,13 +123,18 @@ def reset_game():
         "round_end_time": None,
         "rounds_completed": [],
         "teams_setup": False,
-        "num_teams": 0
+        "num_teams": 0,
+        "total_rounds": 5,
+        "rounds_per_team": 5,
+        "team_rounds": {},
+        "min_round_seconds": 180
     })
     save_submissions({})
 
 # ============== GAME DATA ==============
 
 SCENARIOS = {
+    # ============ CLASSIFICATION SCENARIOS ============
     "credit_risk": {
         "name": "💳 Credit Risk Assessment",
         "question": "Will the borrower default on their loan?",
@@ -134,7 +143,8 @@ SCENARIOS = {
         "inputs": ["Income", "Credit Score", "Debt-to-Income Ratio", "Employment Years"],
         "target": "Default (Yes/No)",
         "correct_methods": ["logistic", "tree"],
-        "best_method": "logistic"
+        "best_method": "logistic",
+        "simulation": "credit_risk"
     },
     "fraud_detection": {
         "name": "🚨 Fraud Detection",
@@ -144,8 +154,65 @@ SCENARIOS = {
         "inputs": ["Transaction Amount", "Time of Day", "Location Mismatch", "Merchant Category"],
         "target": "Fraud (Yes/No)",
         "correct_methods": ["logistic", "tree"],
-        "best_method": "tree"
+        "best_method": "tree",
+        "simulation": "fraud_detection"
     },
+    "churn_prediction": {
+        "name": "📱 Customer Churn Prediction",
+        "question": "Will this customer cancel their subscription?",
+        "type": "classification",
+        "description": "A telecom company wants to identify customers likely to leave. Retaining a customer is 5x cheaper than acquiring a new one.",
+        "inputs": ["Monthly Charges", "Tenure (months)", "Support Tickets", "Contract Type"],
+        "target": "Churn (Yes/No)",
+        "correct_methods": ["logistic", "tree"],
+        "best_method": "logistic",
+        "simulation": "churn_prediction"
+    },
+    "loan_approval": {
+        "name": "🏦 Loan Approval Decision",
+        "question": "Should this loan application be approved?",
+        "type": "classification",
+        "description": "A microfinance institution must decide whether to approve small business loans. Wrong approvals lead to losses; wrong rejections mean missed revenue.",
+        "inputs": ["Business Revenue", "Years in Operation", "Owner Credit History", "Loan Amount Requested"],
+        "target": "Approve (Yes/No)",
+        "correct_methods": ["logistic", "tree"],
+        "best_method": "tree",
+        "simulation": "loan_approval"
+    },
+    "insurance_claim": {
+        "name": "🛡️ Insurance Claim Fraud",
+        "question": "Is this insurance claim fraudulent?",
+        "type": "classification",
+        "description": "An insurance company processes thousands of claims daily. Fraudulent claims cost billions per year, but flagging legitimate claims damages customer trust.",
+        "inputs": ["Claim Amount", "Policy Age", "Previous Claims Count", "Incident Severity"],
+        "target": "Fraudulent (Yes/No)",
+        "correct_methods": ["logistic", "tree"],
+        "best_method": "tree",
+        "simulation": "insurance_claim"
+    },
+    "email_spam": {
+        "name": "📧 Spam Email Detection",
+        "question": "Is this email spam or legitimate?",
+        "type": "classification",
+        "description": "A financial firm needs to filter phishing emails from legitimate client communications. Missing a phishing email can lead to data breaches.",
+        "inputs": ["Word Count", "Link Count", "Sender Reputation Score", "Urgency Keywords"],
+        "target": "Spam (Yes/No)",
+        "correct_methods": ["logistic", "tree"],
+        "best_method": "logistic",
+        "simulation": "email_spam"
+    },
+    "market_direction": {
+        "name": "📈 Market Direction Forecast",
+        "question": "Will the stock market go up or down tomorrow?",
+        "type": "classification",
+        "description": "A hedge fund wants to predict whether the market index will rise or fall the next trading day to adjust portfolio positions.",
+        "inputs": ["Today's Return (%)", "Trading Volume", "Volatility Index (VIX)", "Sector Momentum"],
+        "target": "Direction (Up/Down)",
+        "correct_methods": ["logistic", "tree"],
+        "best_method": "logistic",
+        "simulation": "market_direction"
+    },
+    # ============ REGRESSION SCENARIOS ============
     "house_price": {
         "name": "🏠 House Price Prediction",
         "question": "How much is this house worth?",
@@ -154,7 +221,74 @@ SCENARIOS = {
         "inputs": ["Square Footage", "Bedrooms", "Location Score", "Age of Property"],
         "target": "Price ($)",
         "correct_methods": ["linear"],
-        "best_method": "linear"
+        "best_method": "linear",
+        "simulation": "house_price"
+    },
+    "revenue_forecast": {
+        "name": "💰 Revenue Forecasting",
+        "question": "What will next quarter's revenue be?",
+        "type": "regression",
+        "description": "A retail company needs to forecast quarterly revenue to plan inventory and staffing. Overestimating wastes resources; underestimating loses sales.",
+        "inputs": ["Marketing Spend", "Store Count", "Season Index", "Economic Indicator"],
+        "target": "Revenue ($)",
+        "correct_methods": ["linear"],
+        "best_method": "linear",
+        "simulation": "revenue_forecast"
+    },
+    "salary_prediction": {
+        "name": "💼 Salary Prediction",
+        "question": "What salary should we offer this candidate?",
+        "type": "regression",
+        "description": "An HR department needs to determine competitive salary offers based on candidate profiles. Offering too little loses talent; too much hurts the budget.",
+        "inputs": ["Years of Experience", "Education Level", "Skill Score", "Industry Demand Index"],
+        "target": "Salary ($)",
+        "correct_methods": ["linear"],
+        "best_method": "linear",
+        "simulation": "salary_prediction"
+    },
+    "insurance_premium": {
+        "name": "🏥 Insurance Premium Pricing",
+        "question": "How much should the insurance premium be?",
+        "type": "regression",
+        "description": "An insurance company must set premiums that cover expected claims while remaining competitive. Pricing too high loses customers; too low leads to losses.",
+        "inputs": ["Age", "BMI", "Smoker Status", "Number of Dependents"],
+        "target": "Annual Premium ($)",
+        "correct_methods": ["linear"],
+        "best_method": "linear",
+        "simulation": "insurance_premium"
+    },
+    "portfolio_return": {
+        "name": "📊 Portfolio Return Estimation",
+        "question": "What will the expected annual return of this portfolio be?",
+        "type": "regression",
+        "description": "A wealth management firm needs to estimate expected returns for client portfolios to set realistic expectations and rebalance allocations.",
+        "inputs": ["Equity Allocation (%)", "Bond Duration", "Risk Factor (Beta)", "Dividend Yield"],
+        "target": "Expected Return (%)",
+        "correct_methods": ["linear"],
+        "best_method": "linear",
+        "simulation": "portfolio_return"
+    },
+    "energy_cost": {
+        "name": "⚡ Energy Cost Prediction",
+        "question": "What will the monthly energy cost be for this building?",
+        "type": "regression",
+        "description": "A property management company needs to estimate energy costs for budgeting. Accurate predictions help negotiate better utility contracts.",
+        "inputs": ["Building Size (sqft)", "Occupancy Rate", "Average Temperature", "Equipment Age"],
+        "target": "Monthly Cost ($)",
+        "correct_methods": ["linear"],
+        "best_method": "linear",
+        "simulation": "energy_cost"
+    },
+    "customer_lifetime_value": {
+        "name": "🎯 Customer Lifetime Value",
+        "question": "How much revenue will this customer generate over their lifetime?",
+        "type": "regression",
+        "description": "An e-commerce company wants to predict how much each customer will spend over their entire relationship to optimize acquisition and retention budgets.",
+        "inputs": ["First Purchase Amount", "Visit Frequency", "Product Categories Browsed", "Referral Source Score"],
+        "target": "Lifetime Value ($)",
+        "correct_methods": ["linear"],
+        "best_method": "linear",
+        "simulation": "customer_lifetime_value"
     }
 }
 
@@ -376,6 +510,592 @@ def simulate_house_price(method_id, sqft_weight, bedroom_weight, location_weight
         "param_score": max(5, 30 - int(mape / 2))
     }
 
+# --- New Classification Simulations ---
+
+def simulate_churn_prediction(method_id, threshold, tenure_weight, charges_weight):
+    """Simulate customer churn prediction"""
+    np.random.seed(43)
+    n = 200
+    monthly_charges = np.random.uniform(20, 100, n)
+    tenure = np.random.randint(1, 72, n)
+    tickets = np.random.poisson(2, n)
+    contract = np.random.choice([0, 1, 2], n, p=[0.5, 0.3, 0.2])  # month-to-month, 1yr, 2yr
+    true_churn_prob = 0.4 - tenure / 200 + (monthly_charges - 50) / 300 + tickets * 0.05 - contract * 0.15
+    true_churn_prob = np.clip(true_churn_prob, 0.05, 0.9)
+    true_churn = np.random.binomial(1, true_churn_prob)
+
+    if method_id == "linear":
+        predictions = 0.3 - tenure * tenure_weight / 10000 + monthly_charges * charges_weight / 10000
+        flagged = predictions > threshold
+        warning = "⚠️ Linear regression outputs can go outside 0-1 range for classification!"
+    elif method_id == "logistic":
+        z = -1 + (monthly_charges - 50) / 30 - tenure * tenure_weight / 500 + tickets * 0.3
+        predictions = 1 / (1 + np.exp(-z))
+        flagged = predictions > threshold
+        warning = None
+    else:
+        flagged = ((tenure < 12) & (monthly_charges > 60)) | (tickets > 4)
+        predictions = flagged.astype(float)
+        warning = None
+
+    tp = (flagged & true_churn).sum()
+    fp = (flagged & ~true_churn.astype(bool)).sum()
+    fn = (~flagged & true_churn.astype(bool)).sum()
+    tn = (~flagged & ~true_churn.astype(bool)).sum()
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    retention_cost = 50
+    churn_cost = 500
+    total_cost = fn * churn_cost + fp * retention_cost
+
+    return {
+        "true_positives": int(tp), "false_positives": int(fp),
+        "false_negatives": int(fn), "true_negatives": int(tn),
+        "precision": precision * 100, "recall": recall * 100,
+        "total_cost": total_cost, "warning": warning,
+        "param_score": 15 + int(min(precision, recall) * 20)
+    }
+
+def simulate_loan_approval(method_id, threshold, revenue_weight, history_weight):
+    """Simulate loan approval"""
+    np.random.seed(44)
+    n = 150
+    revenue = np.random.lognormal(10, 1, n)
+    years_op = np.random.randint(0, 20, n)
+    credit_hist = np.random.uniform(300, 850, n)
+    loan_amt = np.random.lognormal(9, 0.8, n)
+    ratio = loan_amt / revenue
+    true_approve_prob = 0.3 + (credit_hist - 500) / 1000 + years_op / 50 - ratio * 0.3
+    true_approve_prob = np.clip(true_approve_prob, 0.1, 0.9)
+    true_good = np.random.binomial(1, true_approve_prob)
+
+    if method_id == "linear":
+        predictions = revenue * revenue_weight / 1e7 + credit_hist * history_weight / 10000 - ratio * 0.2
+        approved = predictions > threshold
+        warning = "⚠️ Linear regression isn't designed for approval decisions!"
+    elif method_id == "logistic":
+        z = -2 + credit_hist / 200 + years_op / 10 - ratio * 2
+        predictions = 1 / (1 + np.exp(-z))
+        approved = predictions > threshold
+        warning = None
+    else:
+        approved = (credit_hist > 650) & (years_op > 2) & (ratio < 1.5)
+        predictions = approved.astype(float)
+        warning = None
+
+    good_approved = (approved & true_good).sum()
+    bad_approved = (approved & ~true_good.astype(bool)).sum()
+    approval_rate = approved.mean() * 100
+    default_rate = bad_approved / approved.sum() * 100 if approved.sum() > 0 else 0
+    profit = good_approved * 3000 - bad_approved * 15000
+
+    return {
+        "approval_rate": approval_rate, "default_rate": default_rate,
+        "profit": profit, "predictions": predictions,
+        "warning": warning, "param_score": 15 + int((50 - abs(default_rate - 8)) / 3)
+    }
+
+def simulate_insurance_claim(method_id, threshold, amount_weight, history_weight):
+    """Simulate insurance claim fraud detection"""
+    np.random.seed(45)
+    n = 500
+    claim_amt = np.random.exponential(5000, n)
+    policy_age = np.random.randint(0, 20, n)
+    prev_claims = np.random.poisson(1.5, n)
+    severity = np.random.choice([1, 2, 3], n, p=[0.5, 0.35, 0.15])
+    fraud_prob = 0.05 + (claim_amt > 10000) * 0.15 + (prev_claims > 3) * 0.1 + (policy_age < 1) * 0.1
+    true_fraud = np.random.binomial(1, np.clip(fraud_prob, 0.01, 0.8))
+
+    if method_id == "linear":
+        predictions = claim_amt * amount_weight / 100000 + prev_claims * history_weight / 20
+        flagged = predictions > threshold
+        warning = "⚠️ Linear regression produces values outside 0-1 for fraud classification!"
+    elif method_id == "logistic":
+        z = -3 + claim_amt / 8000 + prev_claims * 0.5 - policy_age * 0.1
+        predictions = 1 / (1 + np.exp(-z))
+        flagged = predictions > threshold
+        warning = None
+    else:
+        flagged = (claim_amt > 10000 * (1 - amount_weight / 10)) | (prev_claims > 3) | (policy_age < 1)
+        predictions = flagged.astype(float)
+        warning = None
+
+    tp = (flagged & true_fraud).sum()
+    fp = (flagged & ~true_fraud.astype(bool)).sum()
+    fn = (~flagged & true_fraud.astype(bool)).sum()
+    tn = (~flagged & ~true_fraud.astype(bool)).sum()
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    total_cost = fn * 5000 + fp * 200
+
+    return {
+        "true_positives": int(tp), "false_positives": int(fp),
+        "false_negatives": int(fn), "true_negatives": int(tn),
+        "precision": precision * 100, "recall": recall * 100,
+        "total_cost": total_cost, "warning": warning,
+        "param_score": 15 + int(min(precision, recall) * 20)
+    }
+
+def simulate_email_spam(method_id, threshold, link_weight, urgency_weight):
+    """Simulate spam email detection"""
+    np.random.seed(46)
+    n = 300
+    word_count = np.random.randint(10, 500, n)
+    link_count = np.random.poisson(2, n)
+    sender_rep = np.random.uniform(0, 10, n)
+    urgency = np.random.uniform(0, 1, n)
+    spam_prob = 0.1 + (link_count > 5) * 0.3 + (sender_rep < 3) * 0.2 + (urgency > 0.7) * 0.15
+    true_spam = np.random.binomial(1, np.clip(spam_prob, 0.02, 0.9))
+
+    if method_id == "linear":
+        predictions = link_count * link_weight / 30 + urgency * urgency_weight / 5 - sender_rep / 20
+        flagged = predictions > threshold
+        warning = "⚠️ Linear regression isn't suited for spam classification!"
+    elif method_id == "logistic":
+        z = -2 + link_count * 0.3 - sender_rep * 0.3 + urgency * urgency_weight
+        predictions = 1 / (1 + np.exp(-z))
+        flagged = predictions > threshold
+        warning = None
+    else:
+        flagged = (link_count > 5) | (sender_rep < 2) | (urgency > 0.8)
+        predictions = flagged.astype(float)
+        warning = None
+
+    tp = (flagged & true_spam).sum()
+    fp = (flagged & ~true_spam.astype(bool)).sum()
+    fn = (~flagged & true_spam.astype(bool)).sum()
+    tn = (~flagged & ~true_spam.astype(bool)).sum()
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    total_cost = fn * 2000 + fp * 100
+
+    return {
+        "true_positives": int(tp), "false_positives": int(fp),
+        "false_negatives": int(fn), "true_negatives": int(tn),
+        "precision": precision * 100, "recall": recall * 100,
+        "total_cost": total_cost, "warning": warning,
+        "param_score": 15 + int(min(precision, recall) * 20)
+    }
+
+def simulate_market_direction(method_id, threshold, volume_weight, vix_weight):
+    """Simulate market direction prediction"""
+    np.random.seed(47)
+    n = 250
+    today_return = np.random.normal(0, 1.5, n)
+    volume = np.random.lognormal(15, 0.5, n)
+    vix = np.random.uniform(10, 40, n)
+    momentum = np.random.normal(0, 1, n)
+    up_prob = 0.52 + today_return * 0.02 - (vix - 20) * 0.005 + momentum * 0.03
+    true_up = np.random.binomial(1, np.clip(up_prob, 0.2, 0.8))
+
+    if method_id == "linear":
+        predictions = 0.5 + today_return * 0.05 - vix * vix_weight / 1000
+        flagged = predictions > threshold
+        warning = "⚠️ Linear regression can't properly model up/down classification!"
+    elif method_id == "logistic":
+        z = 0.1 + today_return * 0.15 - (vix - 20) * vix_weight / 50 + momentum * 0.2
+        predictions = 1 / (1 + np.exp(-z))
+        flagged = predictions > threshold
+        warning = None
+    else:
+        flagged = (today_return > 0) & (vix < 25) | (momentum > 0.5)
+        predictions = flagged.astype(float)
+        warning = None
+
+    tp = (flagged & true_up).sum()
+    fp = (flagged & ~true_up.astype(bool)).sum()
+    fn = (~flagged & true_up.astype(bool)).sum()
+    tn = (~flagged & ~true_up.astype(bool)).sum()
+    accuracy = (tp + tn) / n * 100
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+
+    return {
+        "true_positives": int(tp), "false_positives": int(fp),
+        "false_negatives": int(fn), "true_negatives": int(tn),
+        "precision": precision * 100, "recall": recall * 100,
+        "accuracy": accuracy, "total_cost": int(fp * 1000 + fn * 800),
+        "warning": warning, "param_score": 15 + int(min(precision, recall) * 20)
+    }
+
+# --- New Regression Simulations ---
+
+def simulate_revenue_forecast(method_id, marketing_weight, store_weight, season_weight):
+    """Simulate revenue forecasting"""
+    np.random.seed(48)
+    n = 80
+    marketing = np.random.uniform(50000, 500000, n)
+    stores = np.random.randint(10, 100, n)
+    season = np.random.uniform(0.5, 1.5, n)
+    econ = np.random.normal(100, 10, n)
+    true_revenue = 1e6 + marketing * 3 + stores * 50000 + season * 200000 + econ * 5000
+    true_revenue += np.random.normal(0, 100000, n)
+
+    if method_id == "linear":
+        predictions = 500000 + marketing * marketing_weight + stores * store_weight + season * season_weight
+        warning = None
+    elif method_id == "logistic":
+        predictions = np.full(n, true_revenue.mean())
+        warning = "⚠️ Logistic regression predicts categories, not revenue amounts!"
+    else:
+        predictions = np.where(marketing > 300000, 8e6, np.where(marketing > 150000, 5e6, 3e6))
+        warning = "⚠️ Decision trees create step-wise predictions, not smooth revenue estimates."
+
+    mae = np.abs(predictions - true_revenue).mean()
+    mape = (np.abs(predictions - true_revenue) / true_revenue).mean() * 100
+
+    return {
+        "mae": mae, "mape": mape,
+        "predictions": predictions[:10].tolist(), "actuals": true_revenue[:10].tolist(),
+        "warning": warning, "param_score": max(5, 30 - int(mape / 2))
+    }
+
+def simulate_salary_prediction(method_id, exp_weight, edu_weight, skill_weight):
+    """Simulate salary prediction"""
+    np.random.seed(49)
+    n = 100
+    experience = np.random.uniform(0, 30, n)
+    education = np.random.choice([1, 2, 3, 4], n, p=[0.1, 0.3, 0.4, 0.2])
+    skill = np.random.uniform(1, 10, n)
+    demand = np.random.uniform(0.5, 2.0, n)
+    true_salary = 30000 + experience * 3000 + education * 15000 + skill * 5000 + demand * 10000
+    true_salary += np.random.normal(0, 8000, n)
+
+    if method_id == "linear":
+        predictions = 25000 + experience * exp_weight + education * edu_weight + skill * skill_weight
+        warning = None
+    elif method_id == "logistic":
+        predictions = np.full(n, true_salary.mean())
+        warning = "⚠️ Logistic regression outputs probabilities, not salary amounts!"
+    else:
+        predictions = np.where(experience > 15, 120000, np.where(experience > 7, 80000, 50000))
+        warning = "⚠️ Decision trees create salary brackets, not precise predictions."
+
+    mae = np.abs(predictions - true_salary).mean()
+    mape = (np.abs(predictions - true_salary) / true_salary).mean() * 100
+
+    return {
+        "mae": mae, "mape": mape,
+        "predictions": predictions[:10].tolist(), "actuals": true_salary[:10].tolist(),
+        "warning": warning, "param_score": max(5, 30 - int(mape / 2))
+    }
+
+def simulate_insurance_premium(method_id, age_weight, bmi_weight, smoker_weight):
+    """Simulate insurance premium pricing"""
+    np.random.seed(50)
+    n = 120
+    age = np.random.randint(18, 70, n)
+    bmi = np.random.normal(28, 5, n)
+    smoker = np.random.binomial(1, 0.2, n)
+    dependents = np.random.randint(0, 5, n)
+    true_premium = 2000 + age * 100 + bmi * 50 + smoker * 8000 + dependents * 500
+    true_premium += np.random.normal(0, 1500, n)
+
+    if method_id == "linear":
+        predictions = 1000 + age * age_weight + bmi * bmi_weight + smoker * smoker_weight
+        warning = None
+    elif method_id == "logistic":
+        predictions = np.full(n, true_premium.mean())
+        warning = "⚠️ Logistic regression can't predict premium amounts!"
+    else:
+        predictions = np.where(smoker == 1, 15000, np.where(age > 50, 8000, 5000))
+        warning = "⚠️ Decision trees create premium tiers, not individualized pricing."
+
+    mae = np.abs(predictions - true_premium).mean()
+    mape = (np.abs(predictions - true_premium) / true_premium).mean() * 100
+
+    return {
+        "mae": mae, "mape": mape,
+        "predictions": predictions[:10].tolist(), "actuals": true_premium[:10].tolist(),
+        "warning": warning, "param_score": max(5, 30 - int(mape / 2))
+    }
+
+def simulate_portfolio_return(method_id, equity_weight, bond_weight, risk_weight):
+    """Simulate portfolio return estimation"""
+    np.random.seed(51)
+    n = 60
+    equity_alloc = np.random.uniform(10, 90, n)
+    bond_dur = np.random.uniform(1, 10, n)
+    beta = np.random.uniform(0.5, 2.0, n)
+    div_yield = np.random.uniform(0, 6, n)
+    true_return = 2 + equity_alloc * 0.08 + div_yield * 0.5 - bond_dur * 0.1 + beta * 1.5
+    true_return += np.random.normal(0, 1.5, n)
+
+    if method_id == "linear":
+        predictions = 1 + equity_alloc * equity_weight / 1000 + div_yield * 0.4 + beta * risk_weight / 10
+        warning = None
+    elif method_id == "logistic":
+        predictions = np.full(n, true_return.mean())
+        warning = "⚠️ Logistic regression outputs probabilities, not return percentages!"
+    else:
+        predictions = np.where(equity_alloc > 60, 10, np.where(equity_alloc > 30, 7, 4))
+        warning = "⚠️ Decision trees create return buckets, not smooth estimates."
+
+    mae = np.abs(predictions - true_return).mean()
+    mape = (np.abs(predictions - true_return) / np.abs(true_return)).mean() * 100
+
+    return {
+        "mae": mae, "mape": mape,
+        "predictions": predictions[:10].tolist(), "actuals": true_return[:10].tolist(),
+        "warning": warning, "param_score": max(5, 30 - int(mape / 2))
+    }
+
+def simulate_energy_cost(method_id, size_weight, occupancy_weight, temp_weight):
+    """Simulate energy cost prediction"""
+    np.random.seed(52)
+    n = 100
+    bldg_size = np.random.uniform(5000, 50000, n)
+    occupancy = np.random.uniform(0.3, 1.0, n)
+    avg_temp = np.random.normal(65, 15, n)
+    equip_age = np.random.randint(0, 25, n)
+    true_cost = 500 + bldg_size * 0.1 + occupancy * 2000 + np.abs(avg_temp - 68) * 30 + equip_age * 50
+    true_cost += np.random.normal(0, 500, n)
+
+    if method_id == "linear":
+        predictions = 300 + bldg_size * size_weight / 1000 + occupancy * occupancy_weight + np.abs(avg_temp - 68) * temp_weight
+        warning = None
+    elif method_id == "logistic":
+        predictions = np.full(n, true_cost.mean())
+        warning = "⚠️ Logistic regression can't predict continuous energy costs!"
+    else:
+        predictions = np.where(bldg_size > 30000, 5000, np.where(bldg_size > 15000, 3000, 1500))
+        warning = "⚠️ Decision trees create cost brackets, not precise estimates."
+
+    mae = np.abs(predictions - true_cost).mean()
+    mape = (np.abs(predictions - true_cost) / true_cost).mean() * 100
+
+    return {
+        "mae": mae, "mape": mape,
+        "predictions": predictions[:10].tolist(), "actuals": true_cost[:10].tolist(),
+        "warning": warning, "param_score": max(5, 30 - int(mape / 2))
+    }
+
+def simulate_customer_lifetime_value(method_id, purchase_weight, freq_weight, category_weight):
+    """Simulate customer lifetime value prediction"""
+    np.random.seed(53)
+    n = 100
+    first_purchase = np.random.lognormal(3.5, 0.8, n)
+    visit_freq = np.random.uniform(1, 30, n)
+    categories = np.random.randint(1, 10, n)
+    referral = np.random.uniform(1, 5, n)
+    true_clv = first_purchase * 5 + visit_freq * 100 + categories * 200 + referral * 300
+    true_clv += np.random.normal(0, 500, n)
+    true_clv = np.maximum(true_clv, 50)
+
+    if method_id == "linear":
+        predictions = first_purchase * purchase_weight / 10 + visit_freq * freq_weight + categories * category_weight
+        warning = None
+    elif method_id == "logistic":
+        predictions = np.full(n, true_clv.mean())
+        warning = "⚠️ Logistic regression can't predict lifetime value amounts!"
+    else:
+        predictions = np.where(visit_freq > 20, 5000, np.where(visit_freq > 10, 3000, 1000))
+        warning = "⚠️ Decision trees create value tiers, not individual estimates."
+
+    mae = np.abs(predictions - true_clv).mean()
+    mape = (np.abs(predictions - true_clv) / true_clv).mean() * 100
+
+    return {
+        "mae": mae, "mape": mape,
+        "predictions": predictions[:10].tolist(), "actuals": true_clv[:10].tolist(),
+        "warning": warning, "param_score": max(5, 30 - int(mape / 2))
+    }
+
+# ============== GENERIC SIMULATION UI DISPATCHER ==============
+
+def show_classification_simulation(scenario_id, method_id):
+    """Generic classification simulation UI"""
+    sim_funcs = {
+        "credit_risk": ("credit_risk", show_credit_risk_simulation),
+        "fraud_detection": ("fraud_detection", show_fraud_simulation),
+    }
+
+    if scenario_id in sim_funcs:
+        return sim_funcs[scenario_id][1](method_id)
+
+    # Generic classification UI for new scenarios
+    st.subheader("🎛️ Adjust Parameters")
+    scenario = SCENARIOS[scenario_id]
+
+    if scenario_id == "churn_prediction":
+        col1, col2 = st.columns(2)
+        with col1:
+            threshold = st.slider("Churn Threshold", 0.0, 1.0, 0.4, help="Flag customers above this probability")
+            tenure_weight = st.slider("Tenure Weight", 1, 20, 10)
+        with col2:
+            charges_weight = st.slider("Charges Weight", 1, 20, 10)
+        results = simulate_churn_prediction(method_id, threshold, tenure_weight, charges_weight)
+
+    elif scenario_id == "loan_approval":
+        col1, col2 = st.columns(2)
+        with col1:
+            threshold = st.slider("Approval Threshold", 0.0, 1.0, 0.5)
+            revenue_weight = st.slider("Revenue Weight", 1, 20, 10)
+        with col2:
+            history_weight = st.slider("Credit History Weight", 1, 20, 10)
+        results = simulate_loan_approval(method_id, threshold, revenue_weight, history_weight)
+
+    elif scenario_id == "insurance_claim":
+        col1, col2 = st.columns(2)
+        with col1:
+            threshold = st.slider("Fraud Threshold", 0.0, 1.0, 0.4)
+            amount_weight = st.slider("Claim Amount Weight", 1, 10, 5)
+        with col2:
+            history_weight = st.slider("Claims History Weight", 1, 10, 5)
+        results = simulate_insurance_claim(method_id, threshold, amount_weight, history_weight)
+
+    elif scenario_id == "email_spam":
+        col1, col2 = st.columns(2)
+        with col1:
+            threshold = st.slider("Spam Threshold", 0.0, 1.0, 0.5)
+            link_weight = st.slider("Link Count Weight", 1, 10, 5)
+        with col2:
+            urgency_weight = st.slider("Urgency Weight", 0.5, 3.0, 1.5)
+        results = simulate_email_spam(method_id, threshold, link_weight, urgency_weight)
+
+    elif scenario_id == "market_direction":
+        col1, col2 = st.columns(2)
+        with col1:
+            threshold = st.slider("Prediction Threshold", 0.0, 1.0, 0.5)
+            volume_weight = st.slider("Volume Weight", 1, 10, 5)
+        with col2:
+            vix_weight = st.slider("VIX Weight", 1, 10, 5)
+        results = simulate_market_direction(method_id, threshold, volume_weight, vix_weight)
+    else:
+        return {"param_score": 15, "warning": None}
+
+    # Display results
+    st.subheader("📊 Results")
+    if results.get("warning"):
+        st.error(results["warning"])
+
+    # For loan-approval-style results (approval_rate/default_rate/profit)
+    if "approval_rate" in results:
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Approval Rate", f"{results['approval_rate']:.1f}%")
+        c2.metric("Default Rate", f"{results['default_rate']:.1f}%")
+        c3.metric("Profit/Loss", f"${results['profit']:,.0f}")
+        if hasattr(results.get("predictions", None), '__len__') and len(results["predictions"]) > 10:
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(x=results["predictions"], name="Predicted Probabilities"))
+            fig.update_layout(title="Distribution of Predictions")
+            st.plotly_chart(fig, use_container_width=True)
+    else:
+        # Confusion matrix style
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("True Positives", results['true_positives'])
+        c2.metric("False Positives", results['false_positives'])
+        c3.metric("False Negatives", results['false_negatives'])
+        c4.metric("Total Cost", f"${results['total_cost']:,.0f}")
+
+        col_p, col_r = st.columns(2)
+        col_p.metric("Precision", f"{results['precision']:.1f}%")
+        col_r.metric("Recall", f"{results['recall']:.1f}%")
+
+        fig = go.Figure(data=go.Heatmap(
+            z=[[results['true_negatives'], results['false_positives']],
+               [results['false_negatives'], results['true_positives']]],
+            x=['Predicted Negative', 'Predicted Positive'],
+            y=['Actual Negative', 'Actual Positive'],
+            colorscale='Blues',
+            text=[[results['true_negatives'], results['false_positives']],
+                  [results['false_negatives'], results['true_positives']]],
+            texttemplate="%{text}", textfont={"size": 20}
+        ))
+        fig.update_layout(title="Confusion Matrix")
+        st.plotly_chart(fig, use_container_width=True)
+
+    return results
+
+def show_regression_simulation(scenario_id, method_id):
+    """Generic regression simulation UI"""
+    if scenario_id == "house_price":
+        return show_house_price_simulation(method_id)
+
+    st.subheader("🎛️ Adjust Parameters")
+    scenario = SCENARIOS[scenario_id]
+
+    if scenario_id == "revenue_forecast":
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            p1 = st.slider("Marketing Spend Weight", 1.0, 8.0, 3.0)
+        with c2:
+            p2 = st.slider("Store Count Weight ($)", 20000, 80000, 50000)
+        with c3:
+            p3 = st.slider("Season Weight ($)", 50000, 400000, 200000)
+        results = simulate_revenue_forecast(method_id, p1, p2, p3)
+
+    elif scenario_id == "salary_prediction":
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            p1 = st.slider("Experience Weight ($)", 1000, 6000, 3000)
+        with c2:
+            p2 = st.slider("Education Weight ($)", 5000, 30000, 15000)
+        with c3:
+            p3 = st.slider("Skill Weight ($)", 2000, 10000, 5000)
+        results = simulate_salary_prediction(method_id, p1, p2, p3)
+
+    elif scenario_id == "insurance_premium":
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            p1 = st.slider("Age Weight ($)", 30, 200, 100)
+        with c2:
+            p2 = st.slider("BMI Weight ($)", 10, 100, 50)
+        with c3:
+            p3 = st.slider("Smoker Penalty ($)", 2000, 15000, 8000)
+        results = simulate_insurance_premium(method_id, p1, p2, p3)
+
+    elif scenario_id == "portfolio_return":
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            p1 = st.slider("Equity Weight", 20, 120, 80)
+        with c2:
+            p2 = st.slider("Bond Weight", 1, 20, 5)
+        with c3:
+            p3 = st.slider("Risk Factor Weight", 5, 30, 15)
+        results = simulate_portfolio_return(method_id, p1, p2, p3)
+
+    elif scenario_id == "energy_cost":
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            p1 = st.slider("Building Size Weight", 50, 200, 100)
+        with c2:
+            p2 = st.slider("Occupancy Weight ($)", 500, 4000, 2000)
+        with c3:
+            p3 = st.slider("Temperature Weight ($)", 10, 60, 30)
+        results = simulate_energy_cost(method_id, p1, p2, p3)
+
+    elif scenario_id == "customer_lifetime_value":
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            p1 = st.slider("First Purchase Weight", 10, 80, 50)
+        with c2:
+            p2 = st.slider("Visit Frequency Weight ($)", 30, 200, 100)
+        with c3:
+            p3 = st.slider("Category Weight ($)", 50, 400, 200)
+        results = simulate_customer_lifetime_value(method_id, p1, p2, p3)
+    else:
+        return {"param_score": 15, "warning": None, "mae": 0, "mape": 0, "predictions": [], "actuals": []}
+
+    # Display results
+    st.subheader("📊 Results")
+    if results.get("warning"):
+        st.error(results["warning"])
+
+    c1, c2 = st.columns(2)
+    target_label = scenario.get("target", "Value")
+    c1.metric("Mean Absolute Error", f"${results['mae']:,.0f}" if "$" in target_label else f"{results['mae']:.2f}")
+    c2.metric("Mean % Error", f"{results['mape']:.1f}%")
+
+    if results.get("predictions") and results.get("actuals"):
+        fig = go.Figure()
+        fig.add_trace(go.Bar(name='Predicted', x=list(range(1, 11)), y=results['predictions']))
+        fig.add_trace(go.Bar(name='Actual', x=list(range(1, 11)), y=results['actuals']))
+        fig.update_layout(title="Predicted vs Actual (Sample of 10)", barmode='group')
+        st.plotly_chart(fig, use_container_width=True)
+
+    return results
+
 # ============== ADMIN INTERFACE ==============
 
 def show_admin_login():
@@ -422,22 +1142,77 @@ def show_admin_dashboard():
     else:
         show_game_control()
 
+def assign_random_rounds(num_teams, total_rounds, rounds_per_team):
+    """Assign random scenarios to each team from the pool"""
+    import random
+    all_scenario_ids = list(SCENARIOS.keys())
+    classification_ids = [s for s in all_scenario_ids if SCENARIOS[s]["type"] == "classification"]
+    regression_ids = [s for s in all_scenario_ids if SCENARIOS[s]["type"] == "regression"]
+
+    team_rounds = {}
+    for i in range(num_teams):
+        team_id = f"team_{i+1}"
+        # Ensure a mix: at least half classification, half regression (roughly)
+        n_class = max(1, rounds_per_team // 2)
+        n_reg = rounds_per_team - n_class
+
+        # Pick random scenarios, allow repeats only if pool is smaller than needed
+        picked_class = random.sample(classification_ids, min(n_class, len(classification_ids)))
+        while len(picked_class) < n_class:
+            picked_class.append(random.choice(classification_ids))
+
+        picked_reg = random.sample(regression_ids, min(n_reg, len(regression_ids)))
+        while len(picked_reg) < n_reg:
+            picked_reg.append(random.choice(regression_ids))
+
+        combined = picked_class + picked_reg
+        random.shuffle(combined)
+        team_rounds[team_id] = combined
+
+    return team_rounds
+
 def show_team_setup():
     """Initial team setup - select number of teams"""
     st.header("👥 Setup Teams")
 
-    st.info("Select the number of teams for this game session. Teams will be automatically created with join links.")
+    st.info("Select the number of teams and configure rounds. Each team gets a random set of scenarios from the pool of 15 rounds.")
 
     num_teams = st.slider("Number of Teams", 1, 10, 5)
 
+    st.divider()
+    st.subheader("🎯 Round Configuration")
+
+    total_rounds = st.slider(
+        "Total Rounds per Game",
+        min_value=3, max_value=15, value=5,
+        help="How many rounds to play in total. Admin advances rounds manually."
+    )
+
+    rounds_per_team = st.slider(
+        "Scenarios per Team (randomly assigned)",
+        min_value=3, max_value=15, value=min(total_rounds, 5),
+        help="Each team gets this many random scenarios from the pool of 15. They'll cycle through them across rounds."
+    )
+
+    if rounds_per_team > total_rounds:
+        st.warning("Scenarios per team shouldn't exceed total rounds. Adjusting.")
+        rounds_per_team = total_rounds
+
+    min_round_minutes = st.slider(
+        "Minimum Round Duration (minutes)",
+        min_value=1, max_value=10, value=3,
+        help="Each round stays visible for at least this long, even after submission."
+    )
+
     # Preview team names
+    st.divider()
     st.subheader("Team Preview")
     cols = st.columns(5)
     for i in range(num_teams):
         with cols[i % 5]:
             st.write(f"🏷️ Team {TEAM_NAMES[i]}")
 
-    if st.button("✅ Create Teams", type="primary", use_container_width=True):
+    if st.button("✅ Create Teams & Assign Rounds", type="primary", use_container_width=True):
         # Create teams
         teams = {}
         for i in range(num_teams):
@@ -450,13 +1225,20 @@ def show_team_setup():
             }
         save_teams(teams)
 
+        # Assign random rounds to each team
+        team_rounds = assign_random_rounds(num_teams, total_rounds, rounds_per_team)
+
         # Update game state
         game_state = get_game_state()
         game_state["teams_setup"] = True
         game_state["num_teams"] = num_teams
+        game_state["total_rounds"] = total_rounds
+        game_state["rounds_per_team"] = rounds_per_team
+        game_state["team_rounds"] = team_rounds
+        game_state["min_round_seconds"] = min_round_minutes * 60
         save_game_state(game_state)
 
-        st.success(f"Created {num_teams} teams!")
+        st.success(f"Created {num_teams} teams with {rounds_per_team} random scenarios each!")
         st.rerun()
 
 def show_game_control():
@@ -560,65 +1342,105 @@ def show_round_control():
     game_state = get_game_state()
     teams = get_teams()
     submissions = get_submissions()
+    total_rounds = game_state.get("total_rounds", 5)
 
     col1, col2 = st.columns(2)
 
     with col1:
         st.subheader("Current Status")
-        st.metric("Current Round", game_state["current_round"])
+        st.metric("Round", f"{game_state['current_round']} / {total_rounds}")
         st.metric("Status", "🟢 Active" if game_state["round_active"] else "🔴 Inactive")
         st.metric("Teams", len(teams))
+        st.metric("Min Round Duration", f"{game_state.get('min_round_seconds', 180) // 60} min")
 
-        if game_state["current_scenario"]:
-            scenario = SCENARIOS.get(game_state["current_scenario"], {})
-            st.metric("Scenario", scenario.get("name", "Unknown"))
+        if game_state["round_active"]:
+            # Show timer
+            start_time = datetime.fromisoformat(game_state["round_start_time"])
+            elapsed = (datetime.now() - start_time).total_seconds()
+            min_secs = game_state.get("min_round_seconds", 180)
+            remaining = max(0, min_secs - elapsed)
+            if remaining > 0:
+                st.warning(f"⏱️ Min time remaining: {int(remaining // 60)}m {int(remaining % 60)}s")
+            else:
+                st.success("✅ Minimum time elapsed - can end round")
 
             # Show submission status
-            if game_state["round_active"]:
-                current_round = game_state["current_round"]
-                submitted_teams = sum(1 for s in submissions.values() if s.get("round") == current_round)
-                st.metric("Submissions", f"{submitted_teams} / {len(teams)}")
+            current_round = game_state["current_round"]
+            submitted_teams = sum(1 for s in submissions.values() if s.get("round") == current_round)
+            st.metric("Submissions", f"{submitted_teams} / {len(teams)}")
 
     with col2:
         st.subheader("Round Actions")
 
         if not game_state["round_active"]:
-            scenario_choice = st.selectbox(
-                "Select Scenario",
-                options=list(SCENARIOS.keys()),
-                format_func=lambda x: SCENARIOS[x]["name"]
-            )
+            if game_state["current_round"] >= total_rounds:
+                st.success("🏁 All rounds completed! Check Live Scores for final results.")
+            else:
+                next_round = game_state["current_round"] + 1
+                st.info(f"Next: Round {next_round} of {total_rounds}")
 
-            if st.button("🚀 Start Round", type="primary", use_container_width=True):
-                game_state["current_round"] += 1
-                game_state["round_active"] = True
-                game_state["current_scenario"] = scenario_choice
-                game_state["round_start_time"] = datetime.now().isoformat()
-                save_game_state(game_state)
-                st.success(f"Round {game_state['current_round']} started!")
-                st.rerun()
+                # Show what each team will get
+                st.caption("Each team gets their own random scenario for this round:")
+                team_rounds = game_state.get("team_rounds", {})
+                for tid, team in teams.items():
+                    assigned = team_rounds.get(tid, [])
+                    round_idx = next_round - 1
+                    if round_idx < len(assigned):
+                        scenario_name = SCENARIOS.get(assigned[round_idx], {}).get("name", "Unknown")
+                        st.write(f"  {team['name']}: {scenario_name}")
+                    else:
+                        st.write(f"  {team['name']}: (no more scenarios)")
+
+                if st.button("🚀 Start Round", type="primary", use_container_width=True):
+                    game_state["current_round"] = next_round
+                    game_state["round_active"] = True
+                    game_state["current_scenario"] = "mixed"  # each team gets their own
+                    game_state["round_start_time"] = datetime.now().isoformat()
+                    save_game_state(game_state)
+                    st.success(f"Round {next_round} started!")
+                    st.rerun()
         else:
             st.warning("Round is active - waiting for submissions")
 
-            if st.button("🛑 End Round", type="secondary", use_container_width=True):
+            # Check minimum time
+            start_time = datetime.fromisoformat(game_state["round_start_time"])
+            elapsed = (datetime.now() - start_time).total_seconds()
+            min_secs = game_state.get("min_round_seconds", 180)
+            can_end = elapsed >= min_secs
+
+            if not can_end:
+                st.info(f"Cannot end round yet. {int((min_secs - elapsed) // 60)}m {int((min_secs - elapsed) % 60)}s remaining.")
+
+            if st.button("🛑 End Round", type="secondary", use_container_width=True, disabled=not can_end):
                 game_state["round_active"] = False
                 game_state["round_end_time"] = datetime.now().isoformat()
                 game_state["rounds_completed"].append({
                     "round": game_state["current_round"],
-                    "scenario": game_state["current_scenario"],
+                    "scenario": "mixed",
                     "ended_at": datetime.now().isoformat()
                 })
                 save_game_state(game_state)
                 st.success("Round ended!")
                 st.rerun()
 
+    # Team Round Assignments
+    st.divider()
+    st.subheader("🎲 Team Scenario Assignments")
+    team_rounds = game_state.get("team_rounds", {})
+    for tid, team in teams.items():
+        assigned = team_rounds.get(tid, [])
+        with st.expander(f"{team['name']} - {len(assigned)} scenarios"):
+            for i, sid in enumerate(assigned):
+                scenario_info = SCENARIOS.get(sid, {})
+                status = "✅" if i < game_state["current_round"] else ("🔵" if i == game_state["current_round"] - 1 and game_state["round_active"] else "⬜")
+                st.write(f"  {status} Round {i+1}: {scenario_info.get('name', sid)} ({scenario_info.get('type', '?')})")
+
     # Round history
     st.divider()
     st.subheader("📜 Round History")
     if game_state.get("rounds_completed"):
         for r in reversed(game_state["rounds_completed"]):
-            scenario_name = SCENARIOS.get(r["scenario"], {}).get("name", "Unknown")
-            st.write(f"Round {r['round']}: {scenario_name}")
+            st.write(f"Round {r['round']} completed at {r['ended_at'][:19]}")
     else:
         st.info("No completed rounds yet")
 
@@ -627,11 +1449,16 @@ def show_live_scores():
 
     teams = get_teams()
     submissions = get_submissions()
+    game_state = get_game_state()
 
+    # Build team scores with round-by-round breakdown
     team_scores = []
+    team_round_scores = {}  # {team_name: {round: score}}
     for team_id, team in teams.items():
         total_score = 0.0
         rounds_played = 0
+        best_score = 0.0
+        round_scores = {}
 
         for sub in submissions.values():
             if sub.get("team_id") == team_id:
@@ -642,13 +1469,18 @@ def show_live_scores():
                     score_val = 0.0
                 total_score += score_val
                 rounds_played += 1
+                best_score = max(best_score, score_val)
+                round_scores[sub.get("round", 0)] = score_val
 
+        team_name = team.get("name", "Unknown")
         team_scores.append({
-            "Team": team.get("name", "Unknown"),
+            "Team": team_name,
             "Score": total_score,
             "Rounds": rounds_played,
-            "Avg": round(total_score / rounds_played, 1) if rounds_played > 0 else 0.0
+            "Avg": round(total_score / rounds_played, 1) if rounds_played > 0 else 0.0,
+            "Best": best_score
         })
+        team_round_scores[team_name] = round_scores
 
     if not team_scores:
         st.info("No scores yet")
@@ -656,8 +1488,85 @@ def show_live_scores():
 
     df = pd.DataFrame(team_scores)
     df = df.sort_values("Score", ascending=False).reset_index(drop=True)
-    df.index = df.index + 1
-    df.index.name = "Rank"
+
+    # Podium display for top 3
+    if len(df) >= 1:
+        st.subheader("🏆 Top Teams")
+        podium_cols = st.columns(min(3, len(df)))
+        medals = ["🥇", "🥈", "🥉"]
+        for i in range(min(3, len(df))):
+            with podium_cols[i]:
+                row = df.iloc[i]
+                st.markdown(f"### {medals[i]} {row['Team']}")
+                st.metric("Total Score", f"{row['Score']:.0f}")
+                st.caption(f"Avg: {row['Avg']} | Best: {row['Best']:.0f} | Rounds: {row['Rounds']}")
+
+    st.divider()
+
+    # Score bar chart
+    st.subheader("📊 Score Comparison")
+    fig = go.Figure()
+
+    # Sort for chart
+    chart_df = df.sort_values("Score", ascending=True)
+
+    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+              '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9']
+
+    fig.add_trace(go.Bar(
+        y=chart_df["Team"],
+        x=chart_df["Score"],
+        orientation='h',
+        marker_color=colors[:len(chart_df)],
+        text=chart_df["Score"].apply(lambda x: f"{x:.0f}"),
+        textposition='auto',
+        textfont=dict(size=16, color='white')
+    ))
+
+    fig.update_layout(
+        height=max(300, len(df) * 60),
+        margin=dict(l=0, r=0, t=10, b=0),
+        xaxis_title="Total Score",
+        yaxis_title="",
+        showlegend=False
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Round-by-round breakdown
+    total_rounds = game_state.get("current_round", 0)
+    if total_rounds > 0 and any(team_round_scores.values()):
+        st.divider()
+        st.subheader("📈 Round-by-Round Performance")
+
+        fig2 = go.Figure()
+        for team_name, round_scores in team_round_scores.items():
+            if round_scores:
+                rounds = sorted(round_scores.keys())
+                scores = [round_scores[r] for r in rounds]
+                fig2.add_trace(go.Scatter(
+                    x=[f"R{r}" for r in rounds],
+                    y=scores,
+                    mode='lines+markers',
+                    name=team_name,
+                    line=dict(width=3),
+                    marker=dict(size=10)
+                ))
+
+        fig2.update_layout(
+            height=400,
+            yaxis_title="Score",
+            xaxis_title="Round",
+            yaxis=dict(range=[0, 105]),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # Full leaderboard table
+    st.divider()
+    st.subheader("📋 Full Leaderboard")
+    display_df = df.copy()
+    display_df.index = range(1, len(display_df) + 1)
+    display_df.index.name = "Rank"
 
     max_score = float(df["Score"].max()) if len(df) else 0.0
     if not np.isfinite(max_score):
@@ -665,7 +1574,7 @@ def show_live_scores():
     max_value = max(100.0, max_score)
 
     st.dataframe(
-        df,
+        display_df,
         use_container_width=True,
         column_config={
             "Score": st.column_config.ProgressColumn(
@@ -748,6 +1657,26 @@ def show_team_join(team_id):
         for member in team["members"]:
             st.write(f"• {member}")
 
+def get_team_scenario_for_round(team_id, game_state):
+    """Get the scenario assigned to a specific team for the current round"""
+    team_rounds = game_state.get("team_rounds", {})
+    assigned = team_rounds.get(team_id, [])
+    round_idx = game_state["current_round"] - 1
+    if round_idx < len(assigned):
+        return assigned[round_idx]
+    # Fallback: use first scenario in pool
+    return list(SCENARIOS.keys())[0]
+
+def get_round_time_remaining(game_state):
+    """Get seconds remaining for the minimum round duration. Returns 0 if time elapsed."""
+    start_str = game_state.get("round_start_time")
+    if not start_str:
+        return 0
+    start_time = datetime.fromisoformat(start_str)
+    elapsed = (datetime.now() - start_time).total_seconds()
+    min_secs = game_state.get("min_round_seconds", 180)
+    return max(0, min_secs - elapsed)
+
 def show_player_game():
     """Main player game interface"""
     team_id = st.session_state.get("team_id")
@@ -766,30 +1695,50 @@ def show_player_game():
         show_waiting_screen(team, game_state)
         return
 
+    # Show round timer
+    remaining = get_round_time_remaining(game_state)
+    if remaining > 0:
+        mins = int(remaining // 60)
+        secs = int(remaining % 60)
+        st.info(f"⏱️ Round time remaining: **{mins}:{secs:02d}** - Take your time to analyze the problem!")
+
+    # Get this team's scenario for the current round
+    team_scenario_id = get_team_scenario_for_round(team_id, game_state)
+
     # Check if already submitted this round
     submissions = get_submissions()
     submission_key = f"{team_id}_round_{game_state['current_round']}"
 
     if submission_key in submissions:
-        show_submission_results(submissions[submission_key])
+        show_submission_results(submissions[submission_key], game_state)
         return
 
     # Show game phases
     if "game_phase" not in st.session_state:
         st.session_state.game_phase = "scenario"
 
+    # Store team's scenario in session
+    st.session_state.team_scenario_id = team_scenario_id
+
     if st.session_state.game_phase == "scenario":
-        show_scenario_screen(game_state)
+        show_scenario_screen(game_state, team_scenario_id)
     elif st.session_state.game_phase == "method":
         show_method_selection()
     elif st.session_state.game_phase == "simulation":
-        show_simulation_screen(game_state)
+        show_simulation_screen(game_state, team_scenario_id)
     elif st.session_state.game_phase == "reflection":
-        show_reflection_screen(game_state)
+        show_reflection_screen(game_state, team_scenario_id)
 
 def show_waiting_screen(team, game_state):
     """Show waiting screen between rounds"""
-    st.header("⏳ Waiting for Next Round")
+    total_rounds = game_state.get("total_rounds", 5)
+    current_round = game_state.get("current_round", 0)
+
+    if current_round >= total_rounds:
+        st.header("🏁 Game Over!")
+        st.balloons()
+    else:
+        st.header("⏳ Waiting for Next Round")
 
     col1, col2 = st.columns(2)
 
@@ -804,16 +1753,24 @@ def show_waiting_screen(team, game_state):
                 st.write(f"  • {member}")
 
     with col2:
-        st.subheader("Game Status")
-        st.metric("Rounds Completed", game_state.get("current_round", 0))
-        st.info("🎯 Waiting for instructor to start the next round...")
+        st.subheader("Game Progress")
+        st.metric("Rounds Completed", f"{current_round} / {total_rounds}")
+
+        # Progress bar
+        progress = current_round / total_rounds if total_rounds > 0 else 0
+        st.progress(min(1.0, progress))
+
+        if current_round >= total_rounds:
+            st.success("🏆 All rounds complete! Final scores are in.")
+        else:
+            st.info("🎯 Waiting for instructor to start the next round...")
 
     if st.button("🔄 Check for Updates", use_container_width=True):
         st.rerun()
 
-def show_scenario_screen(game_state):
+def show_scenario_screen(game_state, team_scenario_id=None):
     """Display the current scenario"""
-    scenario_id = game_state["current_scenario"]
+    scenario_id = team_scenario_id or game_state["current_scenario"]
     scenario = SCENARIOS[scenario_id]
 
     st.header(f"Round {game_state['current_round']}: {scenario['name']}")
@@ -868,9 +1825,9 @@ def show_method_selection():
                 st.session_state.game_phase = "simulation"
                 st.rerun()
 
-def show_simulation_screen(game_state):
+def show_simulation_screen(game_state, team_scenario_id=None):
     """Interactive model simulation"""
-    scenario_id = game_state["current_scenario"]
+    scenario_id = team_scenario_id or game_state["current_scenario"]
     scenario = SCENARIOS[scenario_id]
     method_id = st.session_state.selected_method
     method = METHODS[method_id]
@@ -884,13 +1841,11 @@ def show_simulation_screen(game_state):
 
     st.divider()
 
-    # Different parameter controls based on scenario
-    if scenario_id == "credit_risk":
-        results = show_credit_risk_simulation(method_id)
-    elif scenario_id == "fraud_detection":
-        results = show_fraud_simulation(method_id)
-    else:  # house_price
-        results = show_house_price_simulation(method_id)
+    # Route to the right simulation UI
+    if scenario["type"] == "classification":
+        results = show_classification_simulation(scenario_id, method_id)
+    else:
+        results = show_regression_simulation(scenario_id, method_id)
 
     # Store results
     st.session_state.simulation_results = results
@@ -1020,11 +1975,11 @@ def show_house_price_simulation(method_id):
 
     return results
 
-def show_reflection_screen(game_state):
+def show_reflection_screen(game_state, team_scenario_id=None):
     """Reflection questions before final submission"""
     st.header("💭 Reflection")
 
-    scenario_id = game_state["current_scenario"]
+    scenario_id = team_scenario_id or game_state["current_scenario"]
     scenario = SCENARIOS[scenario_id]
     method_id = st.session_state.selected_method
     method = METHODS[method_id]
@@ -1077,7 +2032,7 @@ def show_reflection_screen(game_state):
 def submit_answer(game_state):
     """Lock in the team's answer"""
     team_id = st.session_state.team_id
-    scenario_id = game_state["current_scenario"]
+    scenario_id = st.session_state.get("team_scenario_id") or game_state["current_scenario"]
     method_id = st.session_state.selected_method
     results = st.session_state.simulation_results
     reflection_score = st.session_state.get("reflection_score", 0)
@@ -1109,8 +2064,17 @@ def submit_answer(game_state):
     st.session_state.game_phase = "scenario"
     st.rerun()
 
-def show_submission_results(submission):
-    """Show results after submission"""
+def show_submission_results(submission, game_state=None):
+    """Show results after submission - stays visible for minimum round duration"""
+
+    # Show timer if round is still within minimum duration
+    if game_state:
+        remaining = get_round_time_remaining(game_state)
+        if remaining > 0:
+            mins = int(remaining // 60)
+            secs = int(remaining % 60)
+            st.warning(f"⏱️ Round still active for **{mins}:{secs:02d}** - Review your results and learn from the feedback!")
+
     st.header("✅ Round Complete!")
 
     scenario = SCENARIOS.get(submission["scenario"], {})
@@ -1129,6 +2093,17 @@ def show_submission_results(submission):
     with col2:
         st.subheader("Score")
         st.metric("Points Earned", f"{submission['score']} / 100")
+
+        # Score breakdown visual
+        score = submission.get("score", 0)
+        if score >= 80:
+            st.success("🌟 Excellent performance!")
+        elif score >= 60:
+            st.info("👍 Good job! Room for improvement.")
+        elif score >= 40:
+            st.warning("📚 Review the feedback below to improve.")
+        else:
+            st.error("💡 Study the best approach explanation below.")
 
     st.subheader("📝 Feedback")
     for fb in submission.get("feedback", []):
