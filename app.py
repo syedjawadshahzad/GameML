@@ -36,22 +36,23 @@ ADMIN_PASSWORD = "admin123"
 
 # ============== URL DETECTION ==============
 
-def get_base_url():
-    """Auto-detect base URL for local or deployed environment"""
-    # Check if running on Streamlit Cloud
-    if os.environ.get("STREAMLIT_SHARING_MODE") or "streamlit.app" in os.environ.get("HOSTNAME", ""):
-        # Try to get the URL from headers
-        try:
-            from streamlit.web.server.websocket_headers import _get_websocket_headers
-            headers = _get_websocket_headers()
-            if headers:
-                host = headers.get("Host", "")
-                if host:
-                    return f"https://{host}"
-        except:
-            pass
+def get_base_url() -> str:
+    """
+    Best-effort base URL detection.
+    - Works on Streamlit Cloud and most reverse proxies.
+    - Falls back to localhost in local dev.
+    """
+    try:
+        from streamlit.web.server.websocket_headers import _get_websocket_headers
+        headers = _get_websocket_headers() or {}
 
-    # Default to localhost for local development
+        host = headers.get("Host")
+        proto = headers.get("X-Forwarded-Proto", "http")  # streamlit cloud/proxies often set this
+        if host:
+            return f"{proto}://{host}"
+    except Exception:
+        pass
+
     return "http://localhost:8501"
 
 # ============== DATA PERSISTENCE ==============
@@ -494,11 +495,12 @@ def show_team_links():
 
     # URL input for customization
     st.subheader("Base URL")
-    base_url = st.text_input(
-        "Base URL (auto-detected, modify if needed)",
-        value=st.session_state.get("base_url", "http://localhost:8501"),
-        help="For Streamlit Cloud, use your app URL like: https://yourapp.streamlit.app"
-    )
+    base_url = get_base_url()
+    st.caption(f"Detected app URL: {base_url}")
+
+    # If you still want an override:
+    base_url = st.text_input("Base URL (override if needed)", value=base_url)
+
     st.session_state.base_url = base_url
 
     st.divider()
