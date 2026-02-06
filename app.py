@@ -655,9 +655,6 @@ def show_live_scores():
         return
 
     df = pd.DataFrame(team_scores)
-    df["Score"] = pd.to_numeric(df["Score"], errors="coerce").fillna(0.0)
-    # progress as fraction
-    df["Progress"] = (df["Score"] / 100.0).clip(0.0, 1.0)
     df = df.sort_values("Score", ascending=False).reset_index(drop=True)
     df.index = df.index + 1
     df.index.name = "Rank"
