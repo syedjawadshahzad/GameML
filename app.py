@@ -623,62 +623,59 @@ def show_round_control():
         st.info("No completed rounds yet")
 
 def show_live_scores():
-    """Display live leaderboard"""
     st.header("📊 Live Leaderboard")
 
     teams = get_teams()
     submissions = get_submissions()
 
-    # Calculate scores
     team_scores = []
     for team_id, team in teams.items():
-        total_score = 0
+        total_score = 0.0
         rounds_played = 0
 
-        for sub_key, sub in submissions.items():
+        for sub in submissions.values():
             if sub.get("team_id") == team_id:
-                total_score += sub.get("score", 0)
+                score_val = sub.get("score", 0)
+                try:
+                    score_val = float(score_val)
+                except Exception:
+                    score_val = 0.0
+                total_score += score_val
                 rounds_played += 1
 
         team_scores.append({
-            "Team": team["name"],
+            "Team": team.get("name", "Unknown"),
             "Score": total_score,
             "Rounds": rounds_played,
-            "Avg": round(total_score / rounds_played, 1) if rounds_played > 0 else 0
+            "Avg": round(total_score / rounds_played, 1) if rounds_played > 0 else 0.0
         })
 
-    if team_scores:
-        df = pd.DataFrame(team_scores)
-        df = df.sort_values("Score", ascending=False).reset_index(drop=True)
-        df.index = df.index + 1
-        df.index.name = "Rank"
-
-        # Display as table
-        st.dataframe(
-            df,
-            use_container_width=True,
-            column_config={
-                "Score": st.column_config.ProgressColumn(
-                    "Score",
-                    min_value=0,
-                    max_value=max(df["Score"].max(), 100)
-                )
-            }
-        )
-
-        # Bar chart
-        if df["Score"].sum() > 0:
-            fig = px.bar(
-                df,
-                x="Team",
-                y="Score",
-                color="Score",
-                color_continuous_scale="Viridis"
-            )
-            fig.update_layout(title="Team Scores", showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
-    else:
+    if not team_scores:
         st.info("No scores yet")
+        return
+
+    df = pd.DataFrame(team_scores)
+    df["Score"] = pd.to_numeric(df["Score"], errors="coerce").fillna(0.0)
+    df = df.sort_values("Score", ascending=False).reset_index(drop=True)
+    df.index = df.index + 1
+    df.index.name = "Rank"
+
+    max_score = float(df["Score"].max()) if len(df) else 0.0
+    if not np.isfinite(max_score):
+        max_score = 0.0
+    max_value = max(100.0, max_score)
+
+    st.dataframe(
+        df,
+        use_container_width=True,
+        column_config={
+            "Score": st.column_config.ProgressColumn(
+                "Score",
+                min_value=0.0,
+                max_value=max_value
+            )
+        }
+    )
 
 def show_all_submissions():
     """Show all team submissions"""
